@@ -48,6 +48,12 @@ class LineCodingApp(QMainWindow):
         self.txt_binario_a = QLineEdit()
         self.txt_binario_a.setReadOnly(True)
         layout.addWidget(self.txt_binario_a)
+
+        layout.addWidget(QLabel("<b>4. Níveis de Tensão da Codificação (MLT-3):</b>"))
+        self.txt_mlt3_a = QLineEdit()
+        self.txt_mlt3_a.setReadOnly(True)
+        self.txt_mlt3_a.setStyleSheet("color: darkred; font-weight: bold;") # Destaque visual
+        layout.addWidget(self.txt_mlt3_a)
         
         # Área do Gráfico da Forma de Onda (Exigência T2)
         layout.addWidget(QLabel("<b>4. Gráfico da Codificação de Linha:</b>"))
@@ -76,6 +82,12 @@ class LineCodingApp(QMainWindow):
         self.grafico_b.showGrid(x=True, y=True)
         layout.addWidget(self.grafico_b)
         
+        layout.addWidget(QLabel("<b>Níveis de Tensão Extraídos (MLT-3):</b>"))
+        self.txt_mlt3_b = QLineEdit()
+        self.txt_mlt3_b.setReadOnly(True)
+        self.txt_mlt3_b.setStyleSheet("color: darkred; font-weight: bold;")
+        layout.addWidget(self.txt_mlt3_b)
+
         # Campos de decodificação reversa
         layout.addWidget(QLabel("<b>Binário Extraído da Onda:</b>"))
         self.txt_binario_b = QLineEdit()
@@ -110,6 +122,8 @@ class LineCodingApp(QMainWindow):
         mensagem_binaria = conversao_binario.texto_para_binario(texto_cifrado)
 
         self.txt_binario_a.setText(mensagem_binaria)
+
+        self.txt_mlt3_a.setText("[Aguardando algoritmo MLT-3...]")
 
 
 if __name__ == "__main__":

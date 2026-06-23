@@ -5,7 +5,7 @@ def mlt_3(binary):
 
     for i in binary:
         
-        if i==0:
+        if i== '0':
             codif.append(estados[j])
         else:
             j=(j+1)%4
@@ -13,15 +13,16 @@ def mlt_3(binary):
 
     return codif
 
-def desmlt_3(codif):
-    binary=""
-    estados=[]
-    j=0
+def desmlt_3(codif): # by sarah có
+    binary = ""
+    nivel_anterior = 0 
 
     for i in codif:
-        if codif[i]==codif[i+1]:
-            binary+=0
+        if i == nivel_anterior:
+            binary += "0" 
         else:
-            binary+=1
+            binary += "1" 
+            
+        nivel_anterior = i 
 
     return binary
