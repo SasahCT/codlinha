@@ -3,7 +3,7 @@ def cifra_cesar(msg):
     msg_cript=""
 
     for c in msg:
-        msg_cript+= chr(ord(c)+key)
+        msg_cript+= chr((ord(c)+key)%256)
         #ord transforma o caracter para seu numero equivalente na tabela ASCII
         #chr retorna o numero em letra
 
@@ -15,6 +15,6 @@ def descript (msg_cript):
     msg=""
 
     for c in msg_cript:
-        msg+=chr(ord(c)-key)
+        msg+=chr((ord(c)-key)%256)
 
     return msg
