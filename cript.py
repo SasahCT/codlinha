@@ -4,8 +4,6 @@ def cifra_cesar(msg):
 
     for c in msg:
         msg_cript+= chr((ord(c)+key)%256)
-        #ord transforma o caracter para seu numero equivalente na tabela ASCII
-        #chr retorna o numero em letra
 
     return msg_cript
     

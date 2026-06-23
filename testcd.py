@@ -35,6 +35,7 @@ class LineCodingApp(QMainWindow):
         
         # Botão para processar (Criptografar -> Binário -> Codificar)
         self.btn_processar = QPushButton("Processar e Gerar Gráfico")
+        self.btn_processar.clicked.connect(self.acao_apertar_botao)
         layout.addWidget(self.btn_processar)
         
         # Campos de exibição dos resultados (Exigência T1)
@@ -103,7 +104,8 @@ class LineCodingApp(QMainWindow):
             
         texto_cifrado = cript.cifra_cesar(texto_original)
 
-        self.txt_cripto_a.setText(texto_cifrado)
+        texto_com_simbolos = bytes(ord(c) for c in texto_cifrado).decode('cp437', errors='replace')
+        self.txt_cripto_a.setText(texto_com_simbolos)
         
         mensagem_binaria = conversao_binario.texto_para_binario(texto_cifrado)
 
