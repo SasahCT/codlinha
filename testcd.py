@@ -2,6 +2,7 @@ import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QTextEdit, QLineEdit, QPushButton, QTabWidget)
 import pyqtgraph as pg
+import conversao_binario
 
 class LineCodingApp(QMainWindow):
     def __init__(self):
@@ -91,6 +92,26 @@ class LineCodingApp(QMainWindow):
         layout.addWidget(self.txt_original_b)
         
         self.aba_host_b.setLayout(layout)
+
+    def acao_apertar_botao(self):
+
+        texto_original = self.txt_original_a.text()
+        
+        if not texto_original:
+            return
+            
+        # ETAPA 1: CRIPTOGRAFIA
+        #texto_cifrado = self.cripto.criptografar(texto_original)
+        #self.txt_cripto_a.setText(texto_cifrado)
+        
+        # ETAPA 2: CONVERSÃO BINÁRIA (usando o arquivo correto agora!)
+        #mensagem_binaria = conversao_binario.texto_para_binario(texto_cifrado)
+        #self.txt_binario_a.setText(mensagem_binaria)
+
+
+
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
