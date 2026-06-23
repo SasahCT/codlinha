@@ -10,4 +10,11 @@ def cifra_cesar(msg):
     return msg_cript
     
 
-    
+def descript (msg_cript):
+    key=21
+    msg=""
+
+    for c in msg_cript:
+        msg+=chr(ord(c)-key)
+
+    return msg
