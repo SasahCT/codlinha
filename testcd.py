@@ -138,6 +138,8 @@ class LineCodingApp(QMainWindow):
         texto_formatado = ", ".join(f"+{n}" if n > 0 else str(n) for n in niveis_mlt3)
         self.txt_mlt3_a.setText(texto_formatado)
 
+        self.dados_para_envio = ",".join(map(str, niveis_mlt3))
+
         x_plot = []
         y_plot = []
         
