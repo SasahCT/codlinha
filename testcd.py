@@ -35,6 +35,9 @@ class LineCodingApp(QMainWindow):
         self.timer_serial.timeout.connect(self.verificar_porta_serial)
         self.timer_serial.start(100) # 100 ms
 
+        #criando objeto de conexão
+        self.conexao=serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=1)
+
     def configurar_host_a(self):
         # Layout principal do Host A
         layout = QVBoxLayout()
@@ -161,10 +164,7 @@ class LineCodingApp(QMainWindow):
         self.grafico_a.setXRange(0, len(mensagem_binaria))  # Eixo X acompanha o tamanho da mensagem
 
     def acao_enviar_botao(self):
-        #criando objeto de conexão
-        conexao=serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=1)
-        #tempo para reiniciar o hardware
-        time.sleep(2)
+        
 
         # Validação 1: O usuário clicou em Enviar antes de Processar?
         if self.dados_para_envio is None:
@@ -183,12 +183,9 @@ class LineCodingApp(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Erro no Envio", f"Falha ao enviar dados pelo cabo USB: {e}")
 
-        
-        
-        com_esp.envio_dados(self.dados_para_envio, conexao)
+        com_esp.envio_dados(self.dados_para_envio, self.conexao)
 
-        #------------------------------------------------------------------------------
-        conexao.close()
+
 
     def verificar_porta_serial(self):
         # Por enquanto não faz nada, só impede o app de fechar
