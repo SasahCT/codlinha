@@ -23,6 +23,8 @@ class LineCodingApp(QMainWindow):
         
         self.aba_host_a = QWidget()
         self.aba_host_b = QWidget()
+
+        self.dados_para_envio = None
         
         self.tabs.addTab(self.aba_host_a, "Host A (Envio)")
         self.tabs.addTab(self.aba_host_b, "Host B (Recepção)")
@@ -30,13 +32,16 @@ class LineCodingApp(QMainWindow):
         self.configurar_host_a()
         self.configurar_host_b()
 
-        # Cria um Timer que vai checar a porta USB a cada 100 milissegundos
+        # Timer que vai checar a porta USB a cada 100 milissegundos
         self.timer_serial = QTimer()
         self.timer_serial.timeout.connect(self.verificar_porta_serial)
         self.timer_serial.start(100) # 100 ms
 
-        #criando objeto de conexão
-        self.conexao=serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=1)
+        try:
+            self.conexao_serial = serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=0.1)
+        except Exception as e:
+            self.conexao_serial = None
+            print(f"Aviso: Não foi possível abrir a porta Serial: {e}")
 
     def configurar_host_a(self):
         # Layout principal do Host A
@@ -165,7 +170,6 @@ class LineCodingApp(QMainWindow):
 
     def acao_enviar_botao(self):
         
-
         # Validação 1: O usuário clicou em Enviar antes de Processar?
         if self.dados_para_envio is None:
             QMessageBox.warning(self, "Aviso", "Por favor, digite e Processe uma mensagem primeiro!")
@@ -183,13 +187,84 @@ class LineCodingApp(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Erro no Envio", f"Falha ao enviar dados pelo cabo USB: {e}")
 
-        com_esp.envio_dados(self.dados_para_envio, self.conexao)
-
-
+    def closeEvent(self, event):
+        print("Fechando o aplicativo...")
+        
+        if hasattr(self, 'timer_serial'):
+            self.timer_serial.stop()
+            
+        if hasattr(self, 'conexao_serial') and self.conexao_serial and self.conexao_serial.is_open:
+            self.conexao_serial.close()
+            print("Porta Serial liberada com sucesso!")
+            
+        event.accept()
 
     def verificar_porta_serial(self):
-        # Por enquanto não faz nada, só impede o app de fechar
-        pass
+        # Verifica se a conexão existe e está aberta
+        if hasattr(self, 'conexao_serial') and self.conexao_serial and self.conexao_serial.is_open:
+            try:
+                # in_waiting verifica se tem "cartas na caixa de correio" do USB
+                if self.conexao_serial.in_waiting > 0:
+                    # Lê a linha até o \n, decodifica os bytes para texto e remove espaços em branco
+                    linha_recebida = self.conexao_serial.readline().decode('utf-8').strip()
+                    
+                    # Lembra que o código do ESP32 (em C++) manda a string começando com "RX:"?
+                    # Nós filtramos isso aqui para ter certeza que é o dado certo
+                    if linha_recebida.startswith("RX:"):
+                        dados_limpos = linha_recebida.replace("RX:", "")
+                        
+                        # Manda a string "0,1,0,-1..." para a função que atualiza a tela
+                        self.processar_dados_recebidos(dados_limpos)
+                        
+            except Exception as e:
+                print(f"Erro silencioso na leitura serial: {e}")
+
+    def processar_dados_recebidos(self, dados_string):
+        """
+        Recebe a string limpa do ESP32 e faz o caminho: 
+        Gráfico -> MLT-3 -> Binário -> Cripto -> Texto Original
+        """
+        try:
+            # 1. Mostra a string crua recebida na tela
+            self.txt_mlt3_b.setText(dados_string)
+            
+            # Converte a string "0,1,0,-1" de volta para uma lista de inteiros [0, 1, 0, -1]
+            niveis_mlt3 = [int(x) for x in dados_string.split(",")]
+            
+            # 2. Desenha o gráfico da onda recebida (Em AZUL para o Host B)
+            self.grafico_b.clear()
+            x_plot = []
+            y_plot = []
+            for i, nivel in enumerate(niveis_mlt3):
+                x_plot.extend([i, i + 1])
+                y_plot.extend([nivel, nivel])
+                
+            self.grafico_b.plot(x_plot, y_plot, pen=pg.mkPen('b', width=3)) # 'b' de Blue
+            self.grafico_b.setYRange(-1.5, 1.5)
+            self.grafico_b.setXRange(0, len(niveis_mlt3))
+
+            # ===============================================================
+            # ATENÇÃO: As 3 linhas abaixo dependem das funções da sua equipe!
+            # ===============================================================
+            
+            # 3. Decodifica MLT-3 para Binário
+            # Presume que no arquivo mlt3.py exista uma função chamada decodificar_mlt3
+            mensagem_binaria = mlt3.desmlt_3(niveis_mlt3)
+            self.txt_binario_b.setText(mensagem_binaria)
+            
+            # 4. Decodifica Binário para Texto Criptografado
+            # Presume que em conversao_binario.py exista uma função binario_para_texto
+            texto_cripto = conversao_binario.binario_para_texto(mensagem_binaria)
+            texto_com_simbolos = bytes(ord(c) for c in texto_cripto).decode('cp437', errors='replace')
+            self.txt_cripto_b.setText(texto_com_simbolos)
+            
+            # 5. Descriptografa a Cifra de César
+            # Presume que no arquivo cript.py exista uma função decifra_cesar
+            texto_original = cript.descript(texto_cripto)
+            self.txt_original_b.setText(texto_original)
+            
+        except Exception as e:
+            print(f"Aviso: Dados corrompidos recebidos pela rede. Ignorando pacote. Erro: {e}")
 
 
 if __name__ == "__main__":
