@@ -35,8 +35,7 @@ class LineCodingApp(QMainWindow):
         # Timer que vai checar a porta USB a cada 100 milissegundos
         self.timer_serial = QTimer()
         self.timer_serial.timeout.connect(self.verificar_porta_serial)
-        self.timer_serial.start(100) # 100 ms
-
+        self.timer_serial.start(100) 
         try:
             self.conexao_serial = serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=0.1)
         except Exception as e:
@@ -52,12 +51,11 @@ class LineCodingApp(QMainWindow):
         self.txt_original_a = QLineEdit()
         layout.addWidget(self.txt_original_a)
         
-        # Botão para processar (Criptografar -> Binário -> Codificar)
+        # Botão para processar (tradução)
         self.btn_processar = QPushButton("Processar e Gerar Gráfico")
         self.btn_processar.clicked.connect(self.acao_apertar_botao)
         layout.addWidget(self.btn_processar)
         
-        # Campos de exibição dos resultados (Exigência T1)
         layout.addWidget(QLabel("<b>2. Mensagem Criptografada:</b>"))
         self.txt_cripto_a = QLineEdit()
         self.txt_cripto_a.setReadOnly(True)
@@ -73,16 +71,16 @@ class LineCodingApp(QMainWindow):
         self.txt_mlt3_a.setReadOnly(True)
         layout.addWidget(self.txt_mlt3_a)
         
-        # Área do Gráfico da Forma de Onda (Exigência T2)
+        # Gráfico
         layout.addWidget(QLabel("<b>4. Gráfico da Codificação de Linha:</b>"))
         self.grafico_a = pg.PlotWidget()
         self.grafico_a.setBackground('w')
         self.grafico_a.showGrid(x=True, y=True)
         layout.addWidget(self.grafico_a)
         
-        # Botão para enviar pela rede (T7)
+        # Botão para enviar pela rede 
         self.btn_enviar = QPushButton("Enviar para o Host B")
-        self.btn_enviar.setStyleSheet("background-color: green; color: white;")
+        self.btn_enviar.setStyleSheet("background-color: pink; color: white;")
         self.btn_enviar.clicked.connect(self.acao_enviar_botao)
         layout.addWidget(self.btn_enviar)
         
@@ -94,7 +92,7 @@ class LineCodingApp(QMainWindow):
         
         layout.addWidget(QLabel("<h3>Aguardando dados da rede...</h3>"))
         
-        # Gráfico invertido (T2)
+        # Gráfico invertido 
         layout.addWidget(QLabel("<b>Gráfico da Onda Recebida:</b>"))
         self.grafico_b = pg.PlotWidget()
         self.grafico_b.setBackground('w')
@@ -127,7 +125,7 @@ class LineCodingApp(QMainWindow):
         self.aba_host_b.setLayout(layout)
 
     def acao_apertar_botao(self):
-
+        #aqui é feita a "tradução"
         texto_original = self.txt_original_a.text()
         
         if not texto_original:
@@ -135,6 +133,7 @@ class LineCodingApp(QMainWindow):
             
         texto_cifrado = cript.cifra_cesar(texto_original)
 
+        #ASCII extendido
         texto_com_simbolos = bytes(ord(c) for c in texto_cifrado).decode('cp437', errors='replace')
         self.txt_cripto_a.setText(texto_com_simbolos)
         
@@ -146,22 +145,21 @@ class LineCodingApp(QMainWindow):
         texto_formatado = ", ".join(f"+{n}" if n > 0 else str(n) for n in niveis_mlt3)
         self.txt_mlt3_a.setText(texto_formatado)
 
+        #a sequência de valores de tensão é transformada em string
         self.dados_para_envio = ",".join(map(str, niveis_mlt3))
 
         x_plot = []
         y_plot = []
         
+        #parte responsável pelo desenho do gráfico
         for i, nivel in enumerate(niveis_mlt3):
-            # Para cada bit, criamos um degrau perfeito.
-            # O bit começa na posição 'i' com o seu nível de tensão
-            # E mantém esse mesmo nível até a posição 'i + 1' (fim do pulso do clock)
             x_plot.extend([i, i + 1])
             y_plot.extend([nivel, nivel])
             
-        # Limpa qualquer desenho anterior do gráfico
+        #limpa qualquer desenho anterior do gráfico
         self.grafico_a.clear()
         
-        # Plota a linha vermelha ('r') com espessura (width) 3 para ficar bem visível
+        #desenho da linha vermelha
         self.grafico_a.plot(x_plot, y_plot, pen=pg.mkPen('r', width=3))
         
         # Ajusta os limites visuais do gráfico para não ficar colado nas bordas
@@ -181,18 +179,21 @@ class LineCodingApp(QMainWindow):
             return
 
         try:
-            # Se passou nas validações, chama a função que a sua colega criou
+            #em caso de sucesso, é feito o envio dos dados
             com_esp.envio_dados(self.dados_para_envio, self.conexao_serial)
             QMessageBox.information(self, "Sucesso", "Dados transmitidos para o ESP32 com sucesso!")
         except Exception as e:
             QMessageBox.critical(self, "Erro no Envio", f"Falha ao enviar dados pelo cabo USB: {e}")
 
     def closeEvent(self, event):
+        #essa função é responsável por terminar com a conexão estabelecida
         print("Fechando o aplicativo...")
         
+        #para o timer
         if hasattr(self, 'timer_serial'):
             self.timer_serial.stop()
             
+        #fecha a porta serial definitivamente    
         if hasattr(self, 'conexao_serial') and self.conexao_serial and self.conexao_serial.is_open:
             self.conexao_serial.close()
             print("Porta Serial liberada com sucesso!")
@@ -203,18 +204,12 @@ class LineCodingApp(QMainWindow):
         # Verifica se a conexão existe e está aberta
         if hasattr(self, 'conexao_serial') and self.conexao_serial and self.conexao_serial.is_open:
             try:
-                # in_waiting verifica se tem "cartas na caixa de correio" do USB
-                if self.conexao_serial.in_waiting > 0:
-                    # Lê a linha até o \n, decodifica os bytes para texto e remove espaços em branco
-                    linha_recebida = self.conexao_serial.readline().decode('utf-8').strip()
-                    
-                    # Lembra que o código do ESP32 (em C++) manda a string começando com "RX:"?
-                    # Nós filtramos isso aqui para ter certeza que é o dado certo
-                    if linha_recebida.startswith("RX:"):
-                        dados_limpos = linha_recebida.replace("RX:", "")
+                linha_recebida=com_esp.recebimento_dados(self.conexao_serial)
+                if linha_recebida.startswith("RX:"):
+                    dados_limpos = linha_recebida.replace("RX:", "")
                         
-                        # Manda a string "0,1,0,-1..." para a função que atualiza a tela
-                        self.processar_dados_recebidos(dados_limpos)
+                    # Manda a string "0,1,0,-1..." para a função que atualiza a tela
+                    self.processar_dados_recebidos(dados_limpos)
                         
             except Exception as e:
                 print(f"Erro silencioso na leitura serial: {e}")
@@ -242,10 +237,6 @@ class LineCodingApp(QMainWindow):
             self.grafico_b.plot(x_plot, y_plot, pen=pg.mkPen('b', width=3)) # 'b' de Blue
             self.grafico_b.setYRange(-1.5, 1.5)
             self.grafico_b.setXRange(0, len(niveis_mlt3))
-
-            # ===============================================================
-            # ATENÇÃO: As 3 linhas abaixo dependem das funções da sua equipe!
-            # ===============================================================
             
             # 3. Decodifica MLT-3 para Binário
             # Presume que no arquivo mlt3.py exista uma função chamada decodificar_mlt3
