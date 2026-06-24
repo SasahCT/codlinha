@@ -1,5 +1,6 @@
 #include <esp_now.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 
 #define ID_MINHA_EQUIPE 2026
 
@@ -42,10 +43,18 @@ void aoReceberDados(const uint8_t * mac, const uint8_t *dadosRecebidos, int len)
 // SETUP: Configurações de Rede e Rádio
 // ================================================================
 void setup() {
-  Serial.begin(115200); // Mesma velocidade que você colocará no Python (pyserial)
+  Serial.begin(115200); // Mesma velocidade configurada no Python
   
   // Liga o Wi-Fi no modo Station (Padrão)
   WiFi.mode(WIFI_STA);
+  
+  // =========================================================
+  // AJUSTE DE FREQUÊNCIA: Força o ESP32 a ficar no Canal 1
+  // Garante que o Host A e o Host B sempre se encontrem no rádio
+  // =========================================================
+  esp_wifi_set_promiscuous(true);
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+  esp_wifi_set_promiscuous(false);
   
   // Inicializa o protocolo ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -53,13 +62,13 @@ void setup() {
     return;
   }
   
-  // Registra a função de escuta (quando chegar Wi-Fi, roda a função acima)
+  // Registra a função de escuta (quando chegar dados pelo rádio, roda a função)
   esp_now_register_recv_cb(esp_now_recv_cb_t(aoReceberDados));
 
   // Configura a quem vamos enviar as mensagens (Neste caso: Broadcast / Todos)
   esp_now_peer_info_t peerInfo = {};
   memcpy(peerInfo.peer_addr, mac_broadcast, 6);
-  peerInfo.channel = 0;  // Canal 0 usa o canal atual do Wi-Fi
+  peerInfo.channel = 1;  // <-- AJUSTADO: Fixo no Canal 1 para casar com o rádio
   peerInfo.encrypt = false;
   
   // Adiciona o endereço de Broadcast à lista de permissões
