@@ -9,6 +9,7 @@ uint8_t mac_broadcast[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 typedef struct mensagem_mlt3 {
   uint16_t id_grupo;
+  char esp_origem[10];
   int8_t niveis[200];
   int tamanho;
 } mensagem_mlt3;

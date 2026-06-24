@@ -25,6 +25,7 @@ class LineCodingApp(QMainWindow):
         self.aba_host_b = QWidget()
 
         self.dados_para_envio = None
+        self.meu_id = "esp1"
 
         self.tabs.addTab(self.aba_host_a, "Host A (Envio)")
         self.tabs.addTab(self.aba_host_b, "Host B (Recepção)")
@@ -92,6 +93,12 @@ class LineCodingApp(QMainWindow):
         layout = QVBoxLayout()
         
         layout.addWidget(QLabel("<h3>Aguardando dados da rede...</h3>"))
+
+        layout.addWidget(QLabel("<b>Mensagem Recebida de (Origem):</b>"))
+        self.txt_origem_b = QLineEdit()
+        self.txt_origem_b.setReadOnly(True)
+        self.txt_origem_b.setStyleSheet("color: green; font-weight: bold;")
+        layout.addWidget(self.txt_origem_b)
         
         # Gráfico invertido 
         layout.addWidget(QLabel("<b>Gráfico da Onda Recebida:</b>"))
@@ -168,21 +175,19 @@ class LineCodingApp(QMainWindow):
         self.grafico_a.setXRange(0, len(mensagem_binaria))  # Eixo X acompanha o tamanho da mensagem
 
     def acao_enviar_botao(self):
-        
-        # Validação 1: O usuário clicou em Enviar antes de Processar?
         if self.dados_para_envio is None:
             QMessageBox.warning(self, "Aviso", "Por favor, digite e Processe uma mensagem primeiro!")
             return
 
-        # Validação 2: A porta USB está aberta/disponível?
         if self.conexao_serial is None or not self.conexao_serial.is_open:
             QMessageBox.critical(self, "Erro de Conexão", "O ESP32 não está conectado na porta Serial (COM)!")
             return
 
         try:
-            #em caso de sucesso, é feito o envio dos dados
-            com_esp.envio_dados(self.dados_para_envio, self.conexao_serial)
-            QMessageBox.information(self, "Sucesso", "Dados transmitidos para o ESP32 com sucesso!")
+            dados_com_protocolo = f"{self.meu_id}:{self.dados_para_envio}"
+            
+            com_esp.envio_dados(dados_com_protocolo, self.conexao_serial)
+            QMessageBox.information(self, "Sucesso", f"Dados transmitidos como {self.meu_id} com sucesso!")
         except Exception as e:
             QMessageBox.critical(self, "Erro no Envio", f"Falha ao enviar dados pelo cabo USB: {e}")
 
@@ -216,17 +221,30 @@ class LineCodingApp(QMainWindow):
                 print(f"Erro na leitura serial: {e}")
 
     def processar_dados_recebidos(self, dados_string):
-        """
-        Recebe a string limpa do ESP32 e faz o caminho: 
-        Gráfico -> MLT-3 -> Binário -> Cripto -> Texto Original
-        """
         try:
-            self.txt_mlt3_b.setText(dados_string)
+            print(f"-> Dados brutos recebidos no Python: {dados_string}")
             
-            # Converte a string em lista
-            niveis_mlt3 = [int(x) for x in dados_string.split(",")]
+            # 🆕 SEPARA O REMETENTE DOS NÍVEIS
+            # Se dados_string for "esp1:0,1,-1", separa em "esp1" e "0,1,-1"
+            if ":" in dados_string:
+                quem_mandou, apenas_niveis = dados_string.split(":", 1)
+            else:
+                quem_mandou = "Desconhecido"
+                apenas_niveis = dados_string
+
+            # Mostra na interface quem foi o ESP que enviou
+            self.txt_origem_b.setText(quem_mandou)
             
-            # desenha o gráfico da onda recebida 
+            # PROTEÇÃO: Filtra os números como já fazíamos antes
+            elementos = [x.strip() for x in apenas_niveis.split(",") if x.strip()]
+            niveis_mlt3 = [int(x) for x in elementos]
+            
+            if not niveis_mlt3:
+                return
+
+            # O RESTO DO SEU CÓDIGO CONTINUA IGUAL DAQUI PARA BAIXO...
+            self.txt_mlt3_b.setText(", ".join(map(str, niveis_mlt3)))
+            
             self.grafico_b.clear()
             x_plot = []
             y_plot = []
@@ -238,7 +256,6 @@ class LineCodingApp(QMainWindow):
             self.grafico_b.setYRange(-1.5, 1.5)
             self.grafico_b.setXRange(0, len(niveis_mlt3))
             
-            #tradução
             mensagem_binaria = mlt3.desmlt_3(niveis_mlt3)
             self.txt_binario_b.setText(mensagem_binaria)
             
@@ -250,7 +267,7 @@ class LineCodingApp(QMainWindow):
             self.txt_original_b.setText(texto_original)
             
         except Exception as e:
-            print(f"Aviso: Dados corrompidos recebidos pela rede. Ignorando pacote. Erro: {e}")
+            print(f"❌ Erro crítico ao processar dados: {e}")
 
 
 if __name__ == "__main__":
