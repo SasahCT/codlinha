@@ -28,17 +28,14 @@ def envio_dados(msg, conexao):
 
 
 def recebimento_dados(conexao):
-
-# verifica se existe algum dado esperando na fila da porta serial
+    # 1. Só tenta ler se houver bytes na fila
     if conexao.in_waiting > 0:
+        dados_brutos = conexao.readline()
 
-    # lê a linha de bytes vinda do ESP
-    #readline() lê até contrar algum "\n"
-        dados_brutos=conexao.readline()
-
-    # transforma os bytes de volta em texto
-    #.strip() limpa espaços em branco ou "\n"
-    msg=dados_brutos.decode('utf-8').strip()
-
-    return msg
+        # 2. SEgurança Máxima: Só aceita se a linha veio completa do ESP32 (termina com \n)
+        if dados_brutos.endswith(b'\n'):
+            msg = dados_brutos.decode('utf-8', errors='ignore').strip()
+            return msg
+            
+    return "" # Retorna string vazia se o dado estiver incompleto ou não houver nada
 

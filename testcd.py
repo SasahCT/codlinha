@@ -25,7 +25,7 @@ class LineCodingApp(QMainWindow):
         self.aba_host_b = QWidget()
 
         self.dados_para_envio = None
-        
+
         self.tabs.addTab(self.aba_host_a, "Host A (Envio)")
         self.tabs.addTab(self.aba_host_b, "Host B (Recepção)")
         
@@ -37,7 +37,8 @@ class LineCodingApp(QMainWindow):
         self.timer_serial.timeout.connect(self.verificar_porta_serial)
         self.timer_serial.start(100) 
         try:
-            self.conexao_serial = serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=0.1)
+            # timeout=1 junto com in_waiting impede que a mensagem seja cortada ao meio!
+            self.conexao_serial = serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=1)
         except Exception as e:
             self.conexao_serial = None
             print(f"Aviso: Não foi possível abrir a porta Serial: {e}")
@@ -80,7 +81,7 @@ class LineCodingApp(QMainWindow):
         
         # Botão para enviar pela rede 
         self.btn_enviar = QPushButton("Enviar para o Host B")
-        self.btn_enviar.setStyleSheet("background-color: pink; color: white;")
+        self.btn_enviar.setStyleSheet("background-color: purple; color: white;")
         self.btn_enviar.clicked.connect(self.acao_enviar_botao)
         layout.addWidget(self.btn_enviar)
         
@@ -201,18 +202,18 @@ class LineCodingApp(QMainWindow):
         event.accept()
 
     def verificar_porta_serial(self):
-        # Verifica se a conexão existe e está aberta
         if hasattr(self, 'conexao_serial') and self.conexao_serial and self.conexao_serial.is_open:
             try:
-                linha_recebida=com_esp.recebimento_dados(self.conexao_serial)
-                if linha_recebida.startswith("RX:"):
-                    dados_limpos = linha_recebida.replace("RX:", "")
-                        
-                    # Manda a string "0,1,0,-1..." para a função que atualiza a tela
-                    self.processar_dados_recebidos(dados_limpos)
+                if self.conexao_serial.in_waiting > 0:
+                    linha_recebida = com_esp.recebimento_dados(self.conexao_serial)
+                    
+                    # Só envia para processamento se a linha for válida e completa
+                    if linha_recebida and linha_recebida.startswith("RX:"):
+                        dados_limpos = linha_recebida.replace("RX:", "")
+                        self.processar_dados_recebidos(dados_limpos)
                         
             except Exception as e:
-                print(f"Erro silencioso na leitura serial: {e}")
+                print(f"Erro na leitura serial: {e}")
 
     def processar_dados_recebidos(self, dados_string):
         """
