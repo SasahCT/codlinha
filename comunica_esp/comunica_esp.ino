@@ -4,7 +4,7 @@
 
 #define ID_MINHA_EQUIPE 2026
 
-// 1. Endereço MAC de Broadcast
+//Endereço MAC de Broadcast
 uint8_t mac_broadcast[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 typedef struct mensagem_mlt3 {
@@ -16,18 +16,16 @@ typedef struct mensagem_mlt3 {
 mensagem_mlt3 pacote_envio;
 mensagem_mlt3 pacote_recebido;
 
-// ================================================================
-// FUNÇÃO RX: Recebe do ar (ESP-NOW) e manda pro Python (Cabo USB)
-// ================================================================
+// função RX: Recebe e manda pro Python 
+
 void aoReceberDados(const uint8_t * mac, const uint8_t *dadosRecebidos, int len) {
-  // Copia os dados que chegaram pelo ar para a nossa variável
   memcpy(&pacote_recebido, dadosRecebidos, sizeof(pacote_recebido));
 
   if (pacote_recebido.id_grupo != ID_MINHA_EQUIPE) {
-    return; // Sai da função imediatamente e ignora o pacote intruso
+    return; 
   }
   
-  // Imprime no cabo USB com o prefixo "RX:" para o Python saber que é uma mensagem
+  // envia com o prefixo "RX:" para o Python saber que é uma mensagem
   Serial.print("RX:"); 
   
   for (int i = 0; i < pacote_recebido.tamanho; i++) {
@@ -39,19 +37,16 @@ void aoReceberDados(const uint8_t * mac, const uint8_t *dadosRecebidos, int len)
   Serial.println(); // Envia quebra de linha avisando o Python que terminou
 }
 
-// ================================================================
 // SETUP: Configurações de Rede e Rádio
-// ================================================================
 void setup() {
   Serial.begin(115200); // Mesma velocidade configurada no Python
   
   // Liga o Wi-Fi no modo Station (Padrão)
   WiFi.mode(WIFI_STA);
   
-  // =========================================================
+  // 
   // AJUSTE DE FREQUÊNCIA: Força o ESP32 a ficar no Canal 1
   // Garante que o Host A e o Host B sempre se encontrem no rádio
-  // =========================================================
   esp_wifi_set_promiscuous(true);
   esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
   esp_wifi_set_promiscuous(false);
@@ -78,9 +73,7 @@ void setup() {
   }
 }
 
-// ================================================================
 // LOOP (TX): Ouve o Python (Cabo USB) e manda pro ar (ESP-NOW)
-// ================================================================
 void loop() {
   if (Serial.available()) {
     // Lê a mensagem do Python até ele dar um (\n)

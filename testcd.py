@@ -221,13 +221,12 @@ class LineCodingApp(QMainWindow):
         Gráfico -> MLT-3 -> Binário -> Cripto -> Texto Original
         """
         try:
-            # 1. Mostra a string crua recebida na tela
             self.txt_mlt3_b.setText(dados_string)
             
-            # Converte a string "0,1,0,-1" de volta para uma lista de inteiros [0, 1, 0, -1]
+            # Converte a string em lista
             niveis_mlt3 = [int(x) for x in dados_string.split(",")]
             
-            # 2. Desenha o gráfico da onda recebida (Em AZUL para o Host B)
+            # desenha o gráfico da onda recebida 
             self.grafico_b.clear()
             x_plot = []
             y_plot = []
@@ -235,23 +234,18 @@ class LineCodingApp(QMainWindow):
                 x_plot.extend([i, i + 1])
                 y_plot.extend([nivel, nivel])
                 
-            self.grafico_b.plot(x_plot, y_plot, pen=pg.mkPen('b', width=3)) # 'b' de Blue
+            self.grafico_b.plot(x_plot, y_plot, pen=pg.mkPen('b', width=3)) 
             self.grafico_b.setYRange(-1.5, 1.5)
             self.grafico_b.setXRange(0, len(niveis_mlt3))
             
-            # 3. Decodifica MLT-3 para Binário
-            # Presume que no arquivo mlt3.py exista uma função chamada decodificar_mlt3
+            #tradução
             mensagem_binaria = mlt3.desmlt_3(niveis_mlt3)
             self.txt_binario_b.setText(mensagem_binaria)
             
-            # 4. Decodifica Binário para Texto Criptografado
-            # Presume que em conversao_binario.py exista uma função binario_para_texto
             texto_cripto = conversao_binario.binario_para_texto(mensagem_binaria)
             texto_com_simbolos = bytes(ord(c) for c in texto_cripto).decode('cp437', errors='replace')
             self.txt_cripto_b.setText(texto_com_simbolos)
             
-            # 5. Descriptografa a Cifra de César
-            # Presume que no arquivo cript.py exista uma função decifra_cesar
             texto_original = cript.descript(texto_cripto)
             self.txt_original_b.setText(texto_original)
             
