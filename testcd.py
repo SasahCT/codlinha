@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 import pyqtgraph as pg
 import conversao_binario
 import cript
+import mlt3
 
 class LineCodingApp(QMainWindow):
     def __init__(self):
@@ -52,7 +53,6 @@ class LineCodingApp(QMainWindow):
         layout.addWidget(QLabel("<b>4. Níveis de Tensão da Codificação (MLT-3):</b>"))
         self.txt_mlt3_a = QLineEdit()
         self.txt_mlt3_a.setReadOnly(True)
-        self.txt_mlt3_a.setStyleSheet("color: darkred; font-weight: bold;") # Destaque visual
         layout.addWidget(self.txt_mlt3_a)
         
         # Área do Gráfico da Forma de Onda (Exigência T2)
@@ -123,8 +123,29 @@ class LineCodingApp(QMainWindow):
 
         self.txt_binario_a.setText(mensagem_binaria)
 
-        self.txt_mlt3_a.setText("[Aguardando algoritmo MLT-3...]")
+        niveis_mlt3 = mlt3.mlt_3(mensagem_binaria)
+        texto_formatado = ", ".join(f"+{n}" if n > 0 else str(n) for n in niveis_mlt3)
+        self.txt_mlt3_a.setText(texto_formatado)
 
+        x_plot = []
+        y_plot = []
+        
+        for i, nivel in enumerate(niveis_mlt3):
+            # Para cada bit, criamos um degrau perfeito.
+            # O bit começa na posição 'i' com o seu nível de tensão
+            # E mantém esse mesmo nível até a posição 'i + 1' (fim do pulso do clock)
+            x_plot.extend([i, i + 1])
+            y_plot.extend([nivel, nivel])
+            
+        # Limpa qualquer desenho anterior do gráfico
+        self.grafico_a.clear()
+        
+        # Plota a linha vermelha ('r') com espessura (width) 3 para ficar bem visível
+        self.grafico_a.plot(x_plot, y_plot, pen=pg.mkPen('r', width=3))
+        
+        # Ajusta os limites visuais do gráfico para não ficar colado nas bordas
+        self.grafico_a.setYRange(-1.5, 1.5)  # Eixo Y vai de -1.5V até +1.5V
+        self.grafico_a.setXRange(0, len(mensagem_binaria))  # Eixo X acompanha o tamanho da mensagem
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
