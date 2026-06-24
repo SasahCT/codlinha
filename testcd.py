@@ -1,10 +1,15 @@
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                             QHBoxLayout, QLabel, QTextEdit, QLineEdit, QPushButton, QTabWidget)
+                             QHBoxLayout, QLabel, QTextEdit, QLineEdit, QPushButton, QTabWidget, QMessageBox)
+
+from PyQt6.QtCore import QTimer
 import pyqtgraph as pg
 import conversao_binario
 import cript
 import mlt3
+import com_esp
+import time
+import serial
 
 class LineCodingApp(QMainWindow):
     def __init__(self):
@@ -24,6 +29,11 @@ class LineCodingApp(QMainWindow):
         
         self.configurar_host_a()
         self.configurar_host_b()
+
+        # Cria um Timer que vai checar a porta USB a cada 100 milissegundos
+        self.timer_serial = QTimer()
+        self.timer_serial.timeout.connect(self.verificar_porta_serial)
+        self.timer_serial.start(100) # 100 ms
 
     def configurar_host_a(self):
         # Layout principal do Host A
@@ -58,13 +68,14 @@ class LineCodingApp(QMainWindow):
         # Área do Gráfico da Forma de Onda (Exigência T2)
         layout.addWidget(QLabel("<b>4. Gráfico da Codificação de Linha:</b>"))
         self.grafico_a = pg.PlotWidget()
-        self.grafico_a.setBackground('w') # Fundo branco para melhor leitura
+        self.grafico_a.setBackground('w')
         self.grafico_a.showGrid(x=True, y=True)
         layout.addWidget(self.grafico_a)
         
         # Botão para enviar pela rede (T7)
         self.btn_enviar = QPushButton("Enviar para o Host B")
         self.btn_enviar.setStyleSheet("background-color: green; color: white;")
+        self.btn_enviar.clicked.connect(self.acao_enviar_botao)
         layout.addWidget(self.btn_enviar)
         
         self.aba_host_a.setLayout(layout)
@@ -146,6 +157,41 @@ class LineCodingApp(QMainWindow):
         # Ajusta os limites visuais do gráfico para não ficar colado nas bordas
         self.grafico_a.setYRange(-1.5, 1.5)  # Eixo Y vai de -1.5V até +1.5V
         self.grafico_a.setXRange(0, len(mensagem_binaria))  # Eixo X acompanha o tamanho da mensagem
+
+    def acao_enviar_botao(self):
+        #criando objeto de conexão
+        conexao=serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=1)
+        #tempo para reiniciar o hardware
+        time.sleep(2)
+
+        # Validação 1: O usuário clicou em Enviar antes de Processar?
+        if self.dados_para_envio is None:
+            QMessageBox.warning(self, "Aviso", "Por favor, digite e Processe uma mensagem primeiro!")
+            return
+
+        # Validação 2: A porta USB está aberta/disponível?
+        if self.conexao_serial is None or not self.conexao_serial.is_open:
+            QMessageBox.critical(self, "Erro de Conexão", "O ESP32 não está conectado na porta Serial (COM)!")
+            return
+
+        try:
+            # Se passou nas validações, chama a função que a sua colega criou
+            com_esp.envio_dados(self.dados_para_envio, self.conexao_serial)
+            QMessageBox.information(self, "Sucesso", "Dados transmitidos para o ESP32 com sucesso!")
+        except Exception as e:
+            QMessageBox.critical(self, "Erro no Envio", f"Falha ao enviar dados pelo cabo USB: {e}")
+
+        
+        
+        com_esp.envio_dados(self.dados_para_envio, conexao)
+
+        #------------------------------------------------------------------------------
+        conexao.close()
+
+    def verificar_porta_serial(self):
+        # Por enquanto não faz nada, só impede o app de fechar
+        pass
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

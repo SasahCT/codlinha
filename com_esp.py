@@ -8,13 +8,13 @@ import time
 # Isso pode ficar no __init__ da sua interface gráfica
 #------------------------------------------------------------------------------
 
-#criando objeto de conexão
-conexao=serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=1)
+# #criando objeto de conexão
+# conexao=serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=1)
 
-#tempo para reiniciar o hardware
-time.sleep(2)
-#------------------------------------------------------------------------------
-conexao.close()
+# #tempo para reiniciar o hardware
+# time.sleep(2)
+# #------------------------------------------------------------------------------
+# conexao.close()
 
 
 
@@ -26,7 +26,7 @@ def envio_dados(msg, conexao):
     conexao.write(msg_final.encode('utf-8'))
 
 
-    
+
 def recebimento_dados(conexao):
 
 # verifica se existe algum dado esperando na fila da porta serial
@@ -35,11 +35,10 @@ def recebimento_dados(conexao):
     # lê a linha de bytes vinda do ESP
     #readline() lê até contrar algum "\n"
         dados_brutos=conexao.readline()
-    
+
     # transforma os bytes de volta em texto
     #.strip() limpa espaços em branco ou "\n"
     msg=dados_brutos.decode('utf-8').strip()
 
     return msg
-    
-    
+
