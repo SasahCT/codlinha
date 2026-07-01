@@ -1,4 +1,5 @@
-import sys
+#feito com auxilio do google gemini
+mport sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QTextEdit, QLineEdit, QPushButton, QTabWidget, QMessageBox)
 
@@ -33,7 +34,7 @@ class LineCodingApp(QMainWindow):
         self.configurar_host_a()
         self.configurar_host_b()
 
-        # Timer que vai checar a porta USB a cada 100 milissegundos
+        # Timer que vai checar a porta USB
         self.timer_serial = QTimer()
         self.timer_serial.timeout.connect(self.verificar_porta_serial)
         self.timer_serial.start(100) 
@@ -212,7 +213,7 @@ class LineCodingApp(QMainWindow):
                 if self.conexao_serial.in_waiting > 0:
                     linha_recebida = com_esp.recebimento_dados(self.conexao_serial)
                     
-                    # Só envia para processamento se a linha for válida e completa
+                    #envia para processamento se a linha for válida e completa
                     if linha_recebida and linha_recebida.startswith("RX:"):
                         dados_limpos = linha_recebida.replace("RX:", "")
                         self.processar_dados_recebidos(dados_limpos)
@@ -221,21 +222,14 @@ class LineCodingApp(QMainWindow):
                 print(f"Erro na leitura serial: {e}")
 
     def processar_dados_recebidos(self, dados_string):
-        """
-        Recebe a string limpa do ESP32, separa o remetente e processa os dados da onda.
-        """
+        
         try:
-            # 1. Limpa espaços em branco e exibe o que veio bruto do cabo serial
             dados_string = dados_string.strip()
-            print(f"\n--- [INÍCIO DO PROCESSAMENTO] ---")
-            print(f"-> 1. Dados brutos recebidos: '{dados_string}'")
+            print(f"Dados brutos recebidos: '{dados_string}'")
             
-            # 2. TRATAMENTO DO PREFIXO "RX:" (Remove se existir)
             if dados_string.startswith("RX:"):
                 dados_string = dados_string[3:].strip()
-                print(f"-> 2. Prefixo 'RX:' removido. String restante: '{dados_string}'")
             
-            # 3. SEPARAÇÃO DO REMETENTE E DOS NÍVEIS DE ONDA
             if ":" in dados_string:
                 quem_mandou, apenas_niveis = dados_string.split(":", 1)
                 quem_mandou = quem_mandou.strip()
@@ -256,7 +250,7 @@ class LineCodingApp(QMainWindow):
             niveis_mlt3 = [int(x) for x in elementos]
             
             if not niveis_mlt3:
-                print("⚠️ [AVISO] A lista de níveis MLT-3 ficou vazia.")
+                print("[AVISO] A lista de níveis MLT-3 ficou vazia.")
                 return
 
             print(f"-> 5. Níveis convertidos com sucesso ({len(niveis_mlt3)} pontos).")
@@ -286,14 +280,13 @@ class LineCodingApp(QMainWindow):
             
             texto_original = cript.descript(texto_cripto)
             self.txt_original_b.setText(texto_original)
-            print(f"--- [FIM DO PROCESSAMENTO - SUCESSO] ---\n")
+            print(f"sucesso\n")
             
         except Exception as e:
-            # Se der qualquer erro, este bloco vai cuspir o motivo real e a linha exata no seu terminal!
             import traceback
-            print(f"\n❌ [ERRO CRÍTICO NO PROCESSAMENTO]:")
+            print(f"\n[erro]:")
             traceback.print_exc()
-            print(f"-------------------------------------\n")
+            
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
