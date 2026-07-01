@@ -221,30 +221,50 @@ class LineCodingApp(QMainWindow):
                 print(f"Erro na leitura serial: {e}")
 
     def processar_dados_recebidos(self, dados_string):
+        """
+        Recebe a string limpa do ESP32, separa o remetente e processa os dados da onda.
+        """
         try:
-            print(f"-> Dados brutos recebidos no Python: {dados_string}")
+            # 1. Limpa espaços em branco e exibe o que veio bruto do cabo serial
+            dados_string = dados_string.strip()
+            print(f"\n--- [INÍCIO DO PROCESSAMENTO] ---")
+            print(f"-> 1. Dados brutos recebidos: '{dados_string}'")
             
-            # 🆕 SEPARA O REMETENTE DOS NÍVEIS
-            # Se dados_string for "esp1:0,1,-1", separa em "esp1" e "0,1,-1"
+            # 2. TRATAMENTO DO PREFIXO "RX:" (Remove se existir)
+            if dados_string.startswith("RX:"):
+                dados_string = dados_string[3:].strip()
+                print(f"-> 2. Prefixo 'RX:' removido. String restante: '{dados_string}'")
+            
+            # 3. SEPARAÇÃO DO REMETENTE E DOS NÍVEIS DE ONDA
             if ":" in dados_string:
                 quem_mandou, apenas_niveis = dados_string.split(":", 1)
+                quem_mandou = quem_mandou.strip()
+                apenas_niveis = apenas_niveis.strip()
             else:
                 quem_mandou = "Desconhecido"
                 apenas_niveis = dados_string
+                
+            print(f"-> 3. Remetente identificado: '{quem_mandou}'")
+            print(f"-> 4. String contendo apenas níveis: '{apenas_niveis}'")
 
-            # Mostra na interface quem foi o ESP que enviou
-            self.txt_origem_b.setText(quem_mandou)
+            # Atualiza o campo visual do remetente (se ele já foi criado na interface)
+            if hasattr(self, 'txt_origem_b'):
+                self.txt_origem_b.setText(quem_mandou)
             
-            # PROTEÇÃO: Filtra os números como já fazíamos antes
+            # 4. CONVERSÃO DOS NÚMEROS (IGNORA VÍRGULAS EXTRAS)
             elementos = [x.strip() for x in apenas_niveis.split(",") if x.strip()]
             niveis_mlt3 = [int(x) for x in elementos]
             
             if not niveis_mlt3:
+                print("⚠️ [AVISO] A lista de níveis MLT-3 ficou vazia.")
                 return
 
-            # O RESTO DO SEU CÓDIGO CONTINUA IGUAL DAQUI PARA BAIXO...
+            print(f"-> 5. Níveis convertidos com sucesso ({len(niveis_mlt3)} pontos).")
+
+            # --- Daqui para baixo continua o seu fluxo padrão de plotagem e decodificação ---
             self.txt_mlt3_b.setText(", ".join(map(str, niveis_mlt3)))
             
+            # Desenha o gráfico
             self.grafico_b.clear()
             x_plot = []
             y_plot = []
@@ -256,6 +276,7 @@ class LineCodingApp(QMainWindow):
             self.grafico_b.setYRange(-1.5, 1.5)
             self.grafico_b.setXRange(0, len(niveis_mlt3))
             
+            # Decodificações
             mensagem_binaria = mlt3.desmlt_3(niveis_mlt3)
             self.txt_binario_b.setText(mensagem_binaria)
             
@@ -265,10 +286,14 @@ class LineCodingApp(QMainWindow):
             
             texto_original = cript.descript(texto_cripto)
             self.txt_original_b.setText(texto_original)
+            print(f"--- [FIM DO PROCESSAMENTO - SUCESSO] ---\n")
             
         except Exception as e:
-            print(f"❌ Erro crítico ao processar dados: {e}")
-
+            # Se der qualquer erro, este bloco vai cuspir o motivo real e a linha exata no seu terminal!
+            import traceback
+            print(f"\n❌ [ERRO CRÍTICO NO PROCESSAMENTO]:")
+            traceback.print_exc()
+            print(f"-------------------------------------\n")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

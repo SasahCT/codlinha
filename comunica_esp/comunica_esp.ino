@@ -26,16 +26,18 @@ void aoReceberDados(const uint8_t * mac, const uint8_t *dadosRecebidos, int len)
     return; 
   }
   
-  // envia com o prefixo "RX:" para o Python saber que é uma mensagem
+  // CORRIGIDO: Envia no formato exato que o Python espera -> RX:esp1:0,1,-1...
   Serial.print("RX:"); 
+  Serial.print(pacote_recebido.esp_origem);
+  Serial.print(":");
   
   for (int i = 0; i < pacote_recebido.tamanho; i++) {
     Serial.print(pacote_recebido.niveis[i]);
     if (i < pacote_recebido.tamanho - 1) {
-      Serial.print(","); // Adiciona vírgulas, menos no último número
+      Serial.print(","); 
     }
   }
-  Serial.println(); // Envia quebra de linha avisando o Python que terminou
+  Serial.println(); // Avisa o Python que terminou a linha
 }
 
 // SETUP: Configurações de Rede e Rádio
@@ -84,7 +86,22 @@ void loop() {
     if (recebido_do_pc.length() > 0) {
 
       pacote_envio.id_grupo = ID_MINHA_EQUIPE;
-      char buffer[500]; 
+
+      
+      int pos_dois_pontos = recebido_do_pc.indexOf(':');
+      String id_remetente = "Desconhecido";
+      String dados_niveis = recebido_do_pc;
+
+      if (pos_dois_pontos != -1) {
+        id_remetente = recebido_do_pc.substring(0, pos_dois_pontos);
+        dados_niveis = recebido_do_pc.substring(pos_dois_pontos + 1);
+      }
+
+      // Copia o nome do remetente para a struct de envio
+      strncpy(pacote_envio.esp_origem, id_remetente.c_str(), sizeof(pacote_envio.esp_origem));
+
+
+      char buffer[1000]; 
       recebido_do_pc.toCharArray(buffer, sizeof(buffer));
       
       // Quebra a string nas vírgulas
@@ -92,7 +109,7 @@ void loop() {
       int indice = 0;
       
       // Converte cada fatia de texto em número e salva no pacote
-      while (token != NULL && indice < 150) {
+      while (token != NULL && indice < 200) {
         pacote_envio.niveis[indice] = atoi(token); 
         indice++;
         token = strtok(NULL, ","); 
