@@ -1,5 +1,5 @@
-#feito com auxilio do google gemini
-mport sys
+#Feito com auxilio do Google Gemini
+import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QTextEdit, QLineEdit, QPushButton, QTabWidget, QMessageBox)
 
@@ -39,14 +39,13 @@ class LineCodingApp(QMainWindow):
         self.timer_serial.timeout.connect(self.verificar_porta_serial)
         self.timer_serial.start(100) 
         try:
-            # timeout=1 junto com in_waiting impede que a mensagem seja cortada ao meio!
             self.conexao_serial = serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=1)
         except Exception as e:
             self.conexao_serial = None
             print(f"Aviso: Não foi possível abrir a porta Serial: {e}")
 
     def configurar_host_a(self):
-        # Layout principal do Host A
+        # Layout do Host A
         layout = QVBoxLayout()
         
         # Campo para digitar o texto original
@@ -90,7 +89,7 @@ class LineCodingApp(QMainWindow):
         self.aba_host_a.setLayout(layout)
 
     def configurar_host_b(self):
-        # Layout principal do Host B (Recepção)
+        # Layout do Host B
         layout = QVBoxLayout()
         
         layout.addWidget(QLabel("<h3>Aguardando dados da rede...</h3>"))
@@ -171,9 +170,9 @@ class LineCodingApp(QMainWindow):
         #desenho da linha vermelha
         self.grafico_a.plot(x_plot, y_plot, pen=pg.mkPen('r', width=3))
         
-        # Ajusta os limites visuais do gráfico para não ficar colado nas bordas
-        self.grafico_a.setYRange(-1.5, 1.5)  # Eixo Y vai de -1.5V até +1.5V
-        self.grafico_a.setXRange(0, len(mensagem_binaria))  # Eixo X acompanha o tamanho da mensagem
+        #ajusta os limites do gráfico para não ficar colado nas bordas
+        self.grafico_a.setYRange(-1.5, 1.5) 
+        self.grafico_a.setXRange(0, len(mensagem_binaria))  
 
     def acao_enviar_botao(self):
         if self.dados_para_envio is None:
@@ -241,11 +240,9 @@ class LineCodingApp(QMainWindow):
             print(f"-> 3. Remetente identificado: '{quem_mandou}'")
             print(f"-> 4. String contendo apenas níveis: '{apenas_niveis}'")
 
-            # Atualiza o campo visual do remetente (se ele já foi criado na interface)
             if hasattr(self, 'txt_origem_b'):
                 self.txt_origem_b.setText(quem_mandou)
             
-            # 4. CONVERSÃO DOS NÚMEROS (IGNORA VÍRGULAS EXTRAS)
             elementos = [x.strip() for x in apenas_niveis.split(",") if x.strip()]
             niveis_mlt3 = [int(x) for x in elementos]
             
@@ -255,10 +252,9 @@ class LineCodingApp(QMainWindow):
 
             print(f"-> 5. Níveis convertidos com sucesso ({len(niveis_mlt3)} pontos).")
 
-            # --- Daqui para baixo continua o seu fluxo padrão de plotagem e decodificação ---
             self.txt_mlt3_b.setText(", ".join(map(str, niveis_mlt3)))
             
-            # Desenha o gráfico
+            #desenha o gráfico
             self.grafico_b.clear()
             x_plot = []
             y_plot = []
@@ -270,7 +266,7 @@ class LineCodingApp(QMainWindow):
             self.grafico_b.setYRange(-1.5, 1.5)
             self.grafico_b.setXRange(0, len(niveis_mlt3))
             
-            # Decodificações
+            #decodificações
             mensagem_binaria = mlt3.desmlt_3(niveis_mlt3)
             self.txt_binario_b.setText(mensagem_binaria)
             

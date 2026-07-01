@@ -1,3 +1,4 @@
+//Feito com auxilio do Google Gemini
 #include <esp_now.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
@@ -17,7 +18,7 @@ typedef struct mensagem_mlt3 {
 mensagem_mlt3 pacote_envio;
 mensagem_mlt3 pacote_recebido;
 
-// LOOP: Ouve o ar (ESP-NOW) e manda pro Python (Cabo USB)
+// LOOP: ESP32 para Python
 
 void aoReceberDados(const uint8_t * mac, const uint8_t *dadosRecebidos, int len) {
   memcpy(&pacote_recebido, dadosRecebidos, sizeof(pacote_recebido));
@@ -39,7 +40,7 @@ void aoReceberDados(const uint8_t * mac, const uint8_t *dadosRecebidos, int len)
   Serial.println(); 
 }
 
-// SETUP: Configurações de Rede e Rádio
+// SETUP: Configurações do ESP-NOW
 void setup() {
   Serial.begin(115200); 
   
@@ -68,7 +69,7 @@ void setup() {
   }
 }
 
-// LOOP: Ouve o Python (Cabo USB) e manda pro ar (ESP-NOW)
+// LOOP: Python Para o ESP32
 void loop() {
   if (Serial.available()) {
     // Lê a mensagem do Python até ele dar um (\n)
